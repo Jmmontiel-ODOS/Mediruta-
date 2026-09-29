@@ -68,6 +68,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
   }
 
   // ---------- Mapa ----------
+  // Copiado por scripts/copiar-maplibre.mjs; ver ese archivo.
+  maplibregl.setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
   const mapa = new maplibregl.Map({
     container: 'mapa',
     style: 'https://tiles.openfreemap.org/styles/liberty',
