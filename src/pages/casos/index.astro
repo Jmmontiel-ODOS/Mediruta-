@@ -1,0 +1,334 @@
+---
+import CRM from '../../layouts/CRM.astro';
+---
+<CRM titulo="Casos" activa="casos">
+  <header class="cabecera">
+    <div>
+      <h1>Casos</h1>
+      <p class="sub">Los más graves primero. Toma un caso y queda asignado a ti.</p>
+    </div>
+    <a class="ir-mapa" href="/">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      Ver en el mapa
+    </a>
+  </header>
+
+  <section class="kpis" aria-label="Resumen">
+    <article class="kpi critico">
+      <span>Críticos sin médico</span>
+      <b class="num" id="k-criticos">0</b>
+      <small id="k-criticos-espera">Espera máxima —</small>
+    </article>
+    <article class="kpi">
+      <span>Mis casos activos</span>
+      <b class="num" id="k-activos">0</b>
+      <small>En camino o en atención</small>
+    </article>
+    <article class="kpi">
+      <span>Resueltos hoy</span>
+      <b class="num" id="k-resueltos">0</b>
+      <small>Por ti</small>
+    </article>
+    <article class="kpi ia">
+      <span>Demanda de las próximas 6 h <em class="pronto">Próximamente</em></span>
+      <div class="barras" aria-hidden="true"><i style="height:40%"></i><i style="height:65%"></i><i style="height:52%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:35%"></i></div>
+      <small>Predicción con IA por barrio y hora</small>
+    </article>
+  </section>
+
+  <section class="herramientas">
+    <label class="buscar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar por paciente, síntoma, cédula o dirección" autocomplete="off" />
+    </label>
+
+    <div class="segmento" id="f-estado" role="group" aria-label="Estado">
+      <button data-v="activos" aria-pressed="true">Por atender</button>
+      <button data-v="mios" aria-pressed="false">Mis casos</button>
+      <button data-v="resueltos" aria-pressed="false">Resueltos</button>
+      <button data-v="todos" aria-pressed="false">Todos</button>
+    </div>
+
+    <div class="chips" id="f-triaje" role="group" aria-label="Triaje">
+      <button data-t="critico" aria-pressed="true"><i></i>Críticos</button>
+      <button data-t="moderado" aria-pressed="true"><i></i>Moderados</button>
+      <button data-t="estable" aria-pressed="true"><i></i>Estables</button>
+    </div>
+
+    <div class="vista" role="group" aria-label="Vista">
+      <button data-vista="lista" aria-pressed="true" title="Lista" aria-label="Lista">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      </button>
+      <button data-vista="tablero" aria-pressed="false" title="Tablero" aria-label="Tablero">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <p class="conteo" id="conteo"></p>
+
+  <section id="lista" class="lista" aria-live="polite"></section>
+  <section id="tablero" class="tablero" hidden></section>
+</CRM>
+
+<style>
+  .cabecera { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+  h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+  .sub { margin: 4px 0 0; color: var(--tinta-3); font-size: 15px; }
+  .ir-mapa {
+    display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 12px;
+    background: var(--marca); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; white-space: nowrap;
+  }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .kpi { display: grid; gap: 4px; padding: 16px 18px; border-radius: var(--radio); background: var(--superficie); border: 1px solid var(--borde); }
+  .kpi span { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--tinta-2); }
+  .kpi b { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  .kpi small { font-size: 12px; color: var(--tinta-3); }
+  .kpi.critico { border-color: rgba(229, 72, 77, 0.35); background: linear-gradient(180deg, #fff5f5, #fff); }
+  .kpi.critico b { color: var(--critico); }
+  .kpi.ia { background: linear-gradient(135deg, #f7f4ff, #f0f9f9); border-color: #e4dcfb; }
+  .kpi.ia em { font-style: normal; }
+  .barras { display: flex; align-items: flex-end; gap: 6px; height: 38px; }
+  .barras i { flex: 1; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #b7a6f3, #d9cffb); opacity: 0.8; }
+
+  .herramientas { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .buscar {
+    flex: 1 1 280px; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px;
+    border-radius: 12px; background: var(--superficie); border: 1px solid var(--borde); color: var(--tinta-3);
+  }
+  .buscar input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 14px; color: var(--tinta); }
+  .buscar:focus-within { border-color: var(--marca); box-shadow: 0 0 0 3px var(--marca-suave); }
+  .segmento, .vista { display: flex; padding: 4px; border-radius: 12px; background: #e8eeee; }
+  .segmento button, .vista button { height: 36px; padding: 0 12px; border: 0; border-radius: 9px; background: none; color: var(--tinta-2); font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .vista button { padding: 0 10px; display: grid; place-items: center; }
+  .segmento button[aria-pressed='true'], .vista button[aria-pressed='true'] { background: #fff; color: var(--tinta); box-shadow: 0 1px 4px rgba(16, 35, 42, 0.12); }
+  .chips { display: flex; gap: 6px; }
+  .chips button { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--borde); background: #fff; font-size: 13px; font-weight: 600; }
+  .chips i { width: 9px; height: 9px; border-radius: 50%; }
+  .chips [data-t='critico'] i { background: var(--critico); }
+  .chips [data-t='moderado'] i { background: var(--moderado); }
+  .chips [data-t='estable'] i { background: var(--estable); }
+  .chips button[aria-pressed='false'] { opacity: 0.45; }
+  .conteo { margin: 8px 0 12px; font-size: 13px; color: var(--tinta-3); font-weight: 600; }
+
+  /* Lista */
+  .lista { display: grid; gap: 8px; }
+  .lista :global(.fila) {
+    display: grid;
+    grid-template-columns: 6px minmax(180px, 1.4fr) minmax(160px, 1.5fr) 150px 110px 120px 150px;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px 14px 0;
+    border-radius: 14px;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .lista :global(.fila:hover) { box-shadow: var(--sombra); transform: translateY(-1px); }
+  .lista :global(.barra-t) { align-self: stretch; margin: -14px 0; }
+  .lista :global(.quien b) { display: block; font-size: 15px; font-weight: 700; }
+  .lista :global(.quien small), .lista :global(.dato small) { display: block; font-size: 12px; color: var(--tinta-3); margin-top: 2px; }
+  .lista :global(.motivo) { font-size: 14px; font-weight: 600; color: var(--tinta-2); }
+  .lista :global(.signos) { display: flex; gap: 10px; font-size: 13px; font-weight: 700; }
+  .lista :global(.signos .alerta) { color: var(--critico); }
+  .lista :global(.dato) { font-size: 14px; font-weight: 700; }
+  .lista :global(.accion) { justify-self: end; }
+  .lista :global(.cabeza-lista) {
+    display: grid; grid-template-columns: 6px minmax(180px, 1.4fr) minmax(160px, 1.5fr) 150px 110px 120px 150px; gap: 16px;
+    padding: 0 16px 0 0; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tinta-3);
+  }
+
+  /* Tablero */
+  .tablero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+  .tablero[hidden] { display: none; }
+  .tablero :global(.columna) { display: grid; gap: 10px; padding: 12px; border-radius: 18px; background: #e9efef; }
+  .tablero :global(.columna h2) { display: flex; align-items: center; gap: 8px; margin: 2px 4px 4px; font-size: 14px; font-weight: 800; }
+  .tablero :global(.columna h2 i) { width: 10px; height: 10px; border-radius: 50%; }
+  .tablero :global(.columna h2 span) { margin-left: auto; font-size: 12px; color: var(--tinta-3); }
+  .tablero :global(.tarjeta) {
+    display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: #fff; border: 1px solid var(--borde);
+    border-left: 4px solid var(--c); color: inherit; text-decoration: none; transition: box-shadow 0.15s;
+  }
+  .tablero :global(.tarjeta:hover) { box-shadow: var(--sombra); }
+  .tablero :global(.tarjeta .fila1) { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .tablero :global(.tarjeta b) { font-size: 15px; }
+  .tablero :global(.tarjeta small) { font-size: 12px; color: var(--tinta-3); }
+  .tablero :global(.tarjeta p) { margin: 0; font-size: 13px; font-weight: 600; color: var(--tinta-2); }
+  .tablero :global(.tarjeta .fila3) { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+  @media (max-width: 1280px) {
+    .lista :global(.fila), .lista :global(.cabeza-lista) { grid-template-columns: 6px minmax(160px, 1.3fr) minmax(140px, 1.5fr) 100px 110px 140px; }
+    .lista :global(.col-signos) { display: none; }
+  }
+  @media (max-width: 1100px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .tablero { grid-template-columns: 1fr; }
+    .lista :global(.cabeza-lista) { display: none; }
+    .lista :global(.fila) { grid-template-columns: 6px 1fr auto; row-gap: 6px; column-gap: 12px; }
+    .lista :global(.barra-t) { grid-row: span 3; }
+    .lista :global(.motivo) { grid-column: 2 / 4; }
+    .lista :global(.col-eta) { display: none; }
+    .lista :global(.col-estado) { grid-column: 2; }
+    .lista :global(.accion) { grid-column: 3; grid-row: 3; }
+  }
+  @media (max-width: 600px) {
+    .cabecera { align-items: flex-start; flex-direction: column; }
+    h1 { font-size: 26px; }
+    .kpis { display: flex; overflow-x: auto; margin: 0 -16px 18px; padding: 0 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .kpi { flex: 0 0 165px; padding: 12px 14px; scroll-snap-align: start; }
+    .kpi b { font-size: 24px; }
+    .barras { height: 26px; }
+    .segmento { width: 100%; overflow-x: auto; }
+    .segmento button { flex: 1; }
+  }
+</style>
+
+<script>
+  import type { Caso, Triaje } from '../../data/casos';
+  import { todos, cambiarEstado, creadoEn, esMio } from '../../scripts/store';
+  import { ETIQUETA_ESTADO, ETIQUETA_TRIAJE, COLOR_TRIAJE, TRIAJES, eta, hace, sinTildes, escapar, avisar } from '../../scripts/formato';
+
+  const PREF = 'mediruta-vista-casos';
+  const f = {
+    q: '',
+    estado: 'activos' as 'activos' | 'mios' | 'resueltos' | 'todos',
+    triajes: new Set<Triaje>(TRIAJES),
+    vista: (() => { try { return localStorage.getItem(PREF) === 'tablero' ? 'tablero' : 'lista'; } catch { return 'lista'; } })() as 'lista' | 'tablero',
+  };
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const minutos = (c: Caso) => (Date.now() - creadoEn(c)) / 60000;
+
+  function filtrar(casos: Caso[]) {
+    return casos
+      .filter((c) => f.triajes.has(c.triaje))
+      .filter((c) =>
+        f.estado === 'activos' ? c.estado !== 'resuelto'
+        : f.estado === 'mios' ? esMio(c) && c.estado !== 'resuelto'
+        : f.estado === 'resueltos' ? c.estado === 'resuelto'
+        : true,
+      )
+      .filter((c) => !f.q || [c.paciente.nombre, c.motivo, c.direccion, c.paciente.cedula, c.id].some((t) => sinTildes(t).includes(f.q)))
+      .sort((a, b) => TRIAJES.indexOf(a.triaje) - TRIAJES.indexOf(b.triaje) || minutos(b) - minutos(a));
+  }
+
+  function accion(c: Caso) {
+    if (c.estado === 'pendiente')
+      return `<button class="btn-tomar ${c.triaje === 'critico' ? 'urgente' : ''}" data-tomar="${c.id}">Tomar caso</button>`;
+    return `<span class="btn-ver">Ver ficha →</span>`;
+  }
+
+  function fila(c: Caso) {
+    const s = c.signos;
+    const e = eta(c);
+    return `
+      <a class="fila" href="/casos/${c.id}">
+        <span class="barra-t ${c.triaje}" title="${ETIQUETA_TRIAJE[c.triaje]}"></span>
+        <div class="quien">
+          <b>${escapar(c.paciente.nombre)}</b>
+          <small>${c.paciente.edad} años · ${c.paciente.eps} · ${hace(minutos(c))}</small>
+        </div>
+        <div class="motivo">${escapar(c.motivo)}</div>
+        <div class="signos num col-signos">
+          <span class="${s.spo2 < 92 ? 'alerta' : ''}">${s.spo2}%</span>
+          <span class="${s.fc > 110 ? 'alerta' : ''}">${s.fc} lpm</span>
+          <span class="${s.temp >= 38.5 ? 'alerta' : ''}">${s.temp}°</span>
+        </div>
+        <div class="dato num col-eta">${e.min} min<small>${e.texto}</small></div>
+        <div class="col-estado"><span class="estado ${c.estado}">${ETIQUETA_ESTADO[c.estado]}</span></div>
+        <div class="accion">${accion(c)}</div>
+      </a>`;
+  }
+
+  function tarjeta(c: Caso) {
+    return `
+      <a class="tarjeta" href="/casos/${c.id}" style="--c:${COLOR_TRIAJE[c.triaje]}">
+        <div class="fila1"><b>${escapar(c.paciente.nombre)}</b><small class="num">${hace(minutos(c))}</small></div>
+        <p>${escapar(c.motivo)}</p>
+        <small>${c.paciente.edad} años · ${eta(c).min} min de ti</small>
+        <div class="fila3"><span class="estado ${c.estado}">${ETIQUETA_ESTADO[c.estado]}</span>${accion(c)}</div>
+      </a>`;
+  }
+
+  function pintar() {
+    const casos = todos();
+    const lista = filtrar(casos);
+
+    const criticos = casos.filter((c) => c.triaje === 'critico' && c.estado === 'pendiente');
+    $('k-criticos').textContent = String(criticos.length);
+    $('k-criticos-espera').textContent = criticos.length ? `Espera máxima ${hace(Math.max(...criticos.map(minutos))).replace('hace ', '')}` : 'Ninguno esperando';
+    $('k-activos').textContent = String(casos.filter((c) => c.estado === 'asignado' || c.estado === 'en_atencion').length);
+    $('k-resueltos').textContent = String(casos.filter((c) => c.estado === 'resuelto').length);
+    document.querySelectorAll('[data-badge-criticos]').forEach((b) => (b.textContent = String(criticos.length)));
+    $('conteo').textContent = `${lista.length} ${lista.length === 1 ? 'caso' : 'casos'}`;
+
+    const vacio = '<p class="vacio">No hay casos con esos filtros.</p>';
+    $('lista').innerHTML = lista.length
+      ? `<div class="cabeza-lista"><span></span><span>Paciente</span><span>Motivo</span><span class="col-signos">SpO₂ · FC · T°</span><span class="col-eta">Llegada</span><span class="col-estado">Estado</span><span></span></div>${lista.map(fila).join('')}`
+      : vacio;
+    $('tablero').innerHTML = TRIAJES.filter((t) => f.triajes.has(t))
+      .map((t) => {
+        const col = lista.filter((c) => c.triaje === t);
+        return `<div class="columna"><h2><i style="background:${COLOR_TRIAJE[t]}"></i>${ETIQUETA_TRIAJE[t]}s<span class="num">${col.length}</span></h2>${col.map(tarjeta).join('') || '<p class="vacio">Sin casos</p>'}</div>`;
+      })
+      .join('');
+
+    $('lista').hidden = f.vista !== 'lista';
+    $('tablero').hidden = f.vista !== 'tablero';
+  }
+
+  // Tomar caso sin entrar a la ficha
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-tomar]');
+    if (!btn) return;
+    e.preventDefault();
+    const c = todos().find((x) => x.id === btn.dataset.tomar);
+    if (!c) return;
+    cambiarEstado(c.id, 'asignado');
+    avisar(`Caso tomado · ${c.paciente.nombre.split(' ')[0]} te espera en ~${eta(c).min} min`);
+    pintar();
+  });
+
+  $('q').addEventListener('input', (e) => {
+    f.q = sinTildes((e.target as HTMLInputElement).value.trim());
+    pintar();
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('#f-estado button').forEach((b) =>
+    b.addEventListener('click', () => {
+      f.estado = b.dataset.v as typeof f.estado;
+      document.querySelectorAll('#f-estado button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      pintar();
+    }),
+  );
+
+  document.querySelectorAll<HTMLButtonElement>('#f-triaje button').forEach((b) =>
+    b.addEventListener('click', () => {
+      const t = b.dataset.t as Triaje;
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(on));
+      on ? f.triajes.add(t) : f.triajes.delete(t);
+      pintar();
+    }),
+  );
+
+  function ponerVista(v: 'lista' | 'tablero') {
+    f.vista = v;
+    try { localStorage.setItem(PREF, v); } catch {}
+    document.querySelectorAll('[data-vista]').forEach((x) => x.setAttribute('aria-pressed', String((x as HTMLElement).dataset.vista === v)));
+    pintar();
+  }
+  document.querySelectorAll<HTMLButtonElement>('[data-vista]').forEach((b) => b.addEventListener('click', () => ponerVista(b.dataset.vista as 'lista' | 'tablero')));
+
+  // Otra pantalla puede abrir la lista ya filtrada con ?estado=mios
+  const pedido = new URLSearchParams(location.search).get('estado');
+  if (pedido) document.querySelector<HTMLButtonElement>(`#f-estado [data-v="${pedido}"]`)?.click();
+
+  ponerVista(f.vista);
+</script>

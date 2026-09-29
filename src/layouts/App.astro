@@ -1,0 +1,26 @@
+---
+import '../styles/global.css';
+interface Props { titulo?: string; protegida?: boolean }
+const { titulo = 'MediRuta', protegida = true } = Astro.props;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{titulo}</title>
+    {protegida && (
+      <script is:inline>
+        try { if (sessionStorage.getItem('mediruta-sesion') !== '1') location.replace('/login'); } catch { location.replace('/login'); }
+      </script>
+    )}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <slot />
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

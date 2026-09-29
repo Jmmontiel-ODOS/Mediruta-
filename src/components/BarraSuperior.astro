@@ -1,0 +1,157 @@
+---
+// Buscador, filtros de triaje, disponibilidad del médico y contador de críticos.
+---
+<header class="barra">
+  <button class="icono-btn" id="btn-ubicarme" aria-label="Centrar en mi ubicación" title="Mi ubicación">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+  </button>
+
+  <a class="logo icono-btn" href="/" aria-label="MediRuta">
+    <img src="/favicon.svg" alt="" width="28" height="28" />
+  </a>
+
+  <div class="centro">
+    <label class="buscador flotante">
+      <input id="buscar" type="search" placeholder="Buscar paciente, síntoma o dirección" autocomplete="off" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    </label>
+    <div class="chips" id="filtros" role="group" aria-label="Filtrar por triaje">
+      <button class="chip" data-triaje="critico" aria-pressed="true"><i></i>Críticos <b class="num" data-cuenta="critico">0</b></button>
+      <button class="chip" data-triaje="moderado" aria-pressed="true"><i></i>Moderados <b class="num" data-cuenta="moderado">0</b></button>
+      <button class="chip" data-triaje="estable" aria-pressed="true"><i></i>Estables <b class="num" data-cuenta="estable">0</b></button>
+    </div>
+  </div>
+
+  <div class="derecha">
+    <button class="disponible flotante" id="btn-disponible" aria-pressed="true">
+      <span class="switch"><span></span></span>
+      <span class="txt">Disponible</span>
+    </button>
+    <div class="contador flotante" title="Críticos sin médico asignado">
+      <span class="latido"></span>
+      <b class="num" id="criticos-pendientes">0</b>
+    </div>
+  </div>
+</header>
+
+<style>
+  .barra {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 20;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    pointer-events: none;
+  }
+  .barra > * { pointer-events: auto; }
+  .logo img { display: block; }
+  .centro { flex: 1; max-width: 560px; margin: 0 auto; display: grid; gap: 8px; pointer-events: none; }
+  .centro > * { pointer-events: auto; }
+  .buscador {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 16px;
+    color: var(--tinta-2);
+  }
+  .buscador input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 15px;
+    color: var(--tinta);
+  }
+  .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--borde);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 2px 8px rgba(16, 35, 42, 0.08);
+    font-size: 13px;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .chip i { width: 10px; height: 10px; border-radius: 50%; }
+  .chip b { font-weight: 800; }
+  .chip[data-triaje='critico'] i { background: var(--critico); box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.2); }
+  .chip[data-triaje='moderado'] i { background: var(--moderado); box-shadow: 0 0 0 3px rgba(245, 165, 36, 0.2); }
+  .chip[data-triaje='estable'] i { background: var(--estable); box-shadow: 0 0 0 3px rgba(48, 164, 108, 0.2); }
+  .chip[aria-pressed='false'] { opacity: 0.45; }
+  .chip[aria-pressed='false'] i { box-shadow: none; }
+
+  .derecha { display: flex; gap: 10px; }
+  .disponible {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .switch {
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--tinta-3);
+    position: relative;
+    transition: background 0.2s;
+  }
+  .switch span {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+  }
+  .disponible[aria-pressed='true'] .switch { background: var(--estable); }
+  .disponible[aria-pressed='true'] .switch span { transform: translateX(16px); }
+  .disponible[aria-pressed='false'] { color: var(--tinta-2); }
+
+  .contador {
+    height: 48px;
+    min-width: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 14px;
+    font-size: 18px;
+  }
+  .latido {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--critico);
+    animation: latido 1.4s ease-out infinite;
+  }
+  @keyframes latido {
+    0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.6); }
+    100% { box-shadow: 0 0 0 10px rgba(229, 72, 77, 0); }
+  }
+
+  @media (max-width: 860px) {
+    .barra { flex-wrap: wrap; }
+    .logo { display: none !important; }
+    .centro { order: 3; flex-basis: 100%; max-width: none; }
+    .derecha { margin-left: auto; }
+  }
+  @media (max-width: 420px) {
+    .disponible .txt { display: none; }
+    .chip { padding: 6px 10px; font-size: 12px; }
+  }
+</style>

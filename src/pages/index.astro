@@ -1,0 +1,17 @@
+---
+import App from '../layouts/App.astro';
+import MapaCasos from '../components/MapaCasos.astro';
+import BarraSuperior from '../components/BarraSuperior.astro';
+import TarjetaCaso from '../components/TarjetaCaso.astro';
+import PanelIA from '../components/PanelIA.astro';
+import NavInferior from '../components/NavInferior.astro';
+import Recorrido from '../components/Recorrido.astro';
+---
+<App titulo="MediRuta · Mapa de pacientes">
+  <MapaCasos />
+  <BarraSuperior />
+  <TarjetaCaso />
+  <PanelIA />
+  <NavInferior activa="mapa" />
+  <Recorrido />
+</App>

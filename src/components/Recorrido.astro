@@ -1,0 +1,102 @@
+---
+// Recorrido guiado de la primera visita. Se repite con ?tour en la URL.
+const pasos = [
+  { sel: null, titulo: 'Bienvenida a MediRuta', texto: 'Cada punto del mapa es un paciente que necesita un médico en casa. Tú eliges a quién atender, como pedir un domicilio pero al revés.' },
+  { sel: '#filtros', titulo: 'El color es la urgencia', texto: 'Rojo es crítico y late para que no se te pase. Amarillo necesita atención pronto. Verde está estable pero igual necesita su consulta.' },
+  { sel: '.contador', titulo: 'Críticos sin médico', texto: 'Este número te dice cuántos pacientes graves siguen esperando. La meta es que esté en cero.' },
+  { sel: '#btn-disponible', titulo: 'Tu disponibilidad', texto: 'Apágala cuando no puedas tomar casos. Mientras esté apagada, no te llegan pacientes.' },
+  { sel: '#panel-ia-btn', titulo: 'Viene el copiloto IA', texto: 'Triaje automático, ruta óptima y alertas de empeoramiento. Lo estamos construyendo.' },
+];
+---
+<div class="recorrido" id="recorrido" hidden data-pasos={JSON.stringify(pasos)}>
+  <div class="foco" id="rec-foco"></div>
+  <div class="caja" role="dialog" aria-modal="true" aria-labelledby="rec-titulo">
+    <p class="paso num" id="rec-paso">Paso 1 de 5</p>
+    <h2 id="rec-titulo"></h2>
+    <p class="texto" id="rec-texto"></p>
+    <div class="acciones">
+      <button class="atras" id="rec-atras">Atrás</button>
+      <button class="siguiente" id="rec-sig">Siguiente</button>
+    </div>
+    <button class="saltar" id="rec-saltar">Saltar recorrido</button>
+  </div>
+</div>
+
+<style>
+  .recorrido { position: fixed; inset: 0; z-index: 40; }
+  .recorrido[hidden] { display: none; }
+  .foco {
+    position: fixed;
+    border-radius: 18px;
+    box-shadow: 0 0 0 9999px rgba(16, 35, 42, 0.45);
+    outline: 2px solid rgba(48, 164, 108, 0.9);
+    outline-offset: 4px;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+  .caja {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(440px, calc(100vw - 32px));
+    padding: 26px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(16, 35, 42, 0.25);
+  }
+  .paso { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--estable); }
+  h2 { margin: 8px 0 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+  .texto { margin: 10px 0 0; font-size: 16px; line-height: 1.55; color: var(--tinta-2); }
+  .acciones { display: flex; gap: 10px; margin-top: 22px; }
+  .atras { flex: 0 0 auto; padding: 0 22px; height: 50px; border-radius: 14px; border: 1.5px solid var(--borde); background: #fff; font-weight: 700; }
+  .atras:disabled { opacity: 0.4; cursor: default; }
+  .siguiente { flex: 1; height: 50px; border: 0; border-radius: 14px; background: linear-gradient(90deg, var(--estable), #6dd4a0); color: #fff; font-size: 16px; font-weight: 800; }
+  .saltar { display: block; margin: 14px auto 0; border: 0; background: none; color: var(--tinta-3); font-size: 14px; font-weight: 600; }
+</style>
+
+<script>
+  const raiz = document.getElementById('recorrido')!;
+  const pasos: { sel: string | null; titulo: string; texto: string }[] = JSON.parse(raiz.dataset.pasos!);
+  const foco = document.getElementById('rec-foco')!;
+  const $ = (id: string) => document.getElementById(id)!;
+  let i = 0;
+
+  function leerVisto() {
+    try { return localStorage.getItem('mediruta-tour') === '1'; } catch { return false; }
+  }
+  function marcarVisto() {
+    try { localStorage.setItem('mediruta-tour', '1'); } catch {}
+  }
+
+  function mostrar() {
+    const p = pasos[i];
+    $('rec-paso').textContent = `Paso ${i + 1} de ${pasos.length}`;
+    $('rec-titulo').textContent = p.titulo;
+    $('rec-texto').textContent = p.texto;
+    ($('rec-atras') as HTMLButtonElement).disabled = i === 0;
+    $('rec-sig').textContent = i === pasos.length - 1 ? 'Empezar' : 'Siguiente';
+    const el = p.sel ? document.querySelector(p.sel) : null;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      Object.assign(foco.style, { left: `${r.left - 6}px`, top: `${r.top - 6}px`, width: `${r.width + 12}px`, height: `${r.height + 12}px`, opacity: '1' });
+    } else {
+      Object.assign(foco.style, { left: '50%', top: '50%', width: '0px', height: '0px', opacity: '1' });
+    }
+  }
+
+  function cerrar() {
+    raiz.hidden = true;
+    marcarVisto();
+  }
+
+  $('rec-sig').addEventListener('click', () => (i === pasos.length - 1 ? cerrar() : (i++, mostrar())));
+  $('rec-atras').addEventListener('click', () => { if (i > 0) { i--; mostrar(); } });
+  $('rec-saltar').addEventListener('click', cerrar);
+  addEventListener('resize', () => { if (!raiz.hidden) mostrar(); });
+
+  if (!leerVisto() || new URLSearchParams(location.search).has('tour')) {
+    // Espera a que el mapa haga su entrada antes de tapar la pantalla.
+    setTimeout(() => { raiz.hidden = false; mostrar(); }, 2600);
+  }
+</script>

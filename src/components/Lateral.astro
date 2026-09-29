@@ -1,0 +1,89 @@
+---
+// Barra lateral del CRM en computador.
+interface Props { activa: 'casos' | 'visitas' }
+const { activa } = Astro.props;
+const principal = [
+  { id: 'mapa', href: '/', texto: 'Mapa en vivo', icono: '<path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>' },
+  { id: 'casos', href: '/casos', texto: 'Casos', icono: '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 2h6v4H9zM8 11h8M8 15h5"/>' },
+  { id: 'visitas', href: '/visitas', texto: 'Mis visitas', icono: '<path d="M3 12h4l3-8 4 16 3-8h4"/>' },
+];
+const pronto = [
+  { texto: 'Pacientes', icono: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5 6.5-5s5.5 1.5 6.5 5M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.2 2.2 3.8 5"/>' },
+  { texto: 'Mensajes WhatsApp', icono: '<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/>' },
+  { texto: 'Reportes con IA', icono: '<path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6z"/>' },
+];
+---
+<aside class="lateral">
+  <a class="logo" href="/">
+    <img src="/favicon.svg" alt="" width="34" height="34" />
+    <span>MediRuta</span>
+  </a>
+
+  <nav aria-label="CRM">
+    {principal.map((i) => (
+      <a class:list={['link', { activo: i.id === activa }]} href={i.href} aria-current={i.id === activa ? 'page' : undefined}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={i.icono} />
+        {i.texto}
+        {i.id === 'casos' && <b class="badge num" data-badge-criticos>0</b>}
+      </a>
+    ))}
+    <p class="grupo">Próximamente</p>
+    {pronto.map((i) => (
+      <span class="link apagado">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={i.icono} />
+        {i.texto}
+      </span>
+    ))}
+  </nav>
+
+  <div class="medico">
+    <span class="avatar">DC</span>
+    <div>
+      <b>Dr. Diego Cardona</b>
+      <span>Medicina general</span>
+    </div>
+  </div>
+  <button class="accion" data-reiniciar>Reiniciar datos de demo</button>
+  <button class="accion salir" data-salir>Cerrar sesión</button>
+</aside>
+
+<style>
+  .lateral {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 22px 16px;
+    background: var(--superficie);
+    border-right: 1px solid var(--borde);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; color: var(--tinta); text-decoration: none; font-size: 19px; font-weight: 800; }
+  nav { display: grid; gap: 2px; }
+  .link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: var(--tinta-2);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  a.link:hover { background: var(--fondo); color: var(--tinta); }
+  .activo { background: var(--marca-suave); color: var(--marca-fuerte); }
+  .activo:hover { background: var(--marca-suave) !important; }
+  .badge { margin-left: auto; min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--critico); color: #fff; font-size: 12px; text-align: center; }
+  .grupo { margin: 18px 12px 4px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6b4bd6; }
+  .apagado { color: var(--tinta-3); opacity: 0.75; cursor: default; }
+
+  .medico { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 14px; background: var(--fondo); }
+  .avatar { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--marca); color: #fff; font-weight: 800; font-size: 14px; }
+  .medico b { display: block; font-size: 14px; }
+  .medico span:not(.avatar) { font-size: 12px; color: var(--tinta-3); }
+  .accion { height: 38px; border: 0; border-radius: 10px; background: none; color: var(--tinta-2); font-size: 13px; font-weight: 700; text-align: left; padding: 0 12px; }
+  .accion:hover { background: var(--fondo); }
+  .salir { color: var(--critico); }
+</style>

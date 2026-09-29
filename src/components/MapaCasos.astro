@@ -1,0 +1,300 @@
+---
+// Mapa 3D con los casos coloreados por triaje. Maneja también la tarjeta,
+// los filtros, el buscador y la disponibilidad de BarraSuperior.
+import 'maplibre-gl/dist/maplibre-gl.css';
+---
+<div id="mapa" class="mapa" aria-label="Mapa de pacientes"></div>
+
+<style>
+  .mapa { position: fixed; inset: 0; background: #eef1ef; }
+  :global(.maplibregl-ctrl-bottom-left) { bottom: 4px; }
+  :global(.maplibregl-ctrl-attrib) { font-size: 10px; }
+
+  :global(.medico) { width: 44px; height: 44px; display: grid; place-items: center; pointer-events: none; }
+  :global(.medico::before) {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.18);
+    animation: onda 2s ease-out infinite;
+  }
+  :global(.medico span) {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.5);
+  }
+  @keyframes onda { from { transform: scale(0.5); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+</style>
+
+<script>
+  import * as maplibregl from 'maplibre-gl';
+  import { DOCTOR, type Caso, type Triaje } from '../data/casos';
+  import { todos, cambiarEstado } from '../scripts/store';
+  import { COLOR_TRIAJE as COLOR, ETIQUETA_TRIAJE as ETIQUETA, ETIQUETA_ESTADO, eta, avisar, sinTildes } from '../scripts/formato';
+
+  // Los resueltos ya no necesitan médico: no van al mapa.
+  const CASOS = todos().filter((c) => c.estado !== 'resuelto');
+
+  const estado = {
+    visibles: new Set<Triaje>(['critico', 'moderado', 'estable']),
+    busqueda: '',
+    seleccionado: null as Caso | null,
+    disponible: true,
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const enmascarar = (nombre: string) => `${nombre.slice(0, 3)} ••••`;
+
+  function coincide(c: Caso) {
+    if (!estado.visibles.has(c.triaje)) return false;
+    const q = estado.busqueda;
+    if (!q) return true;
+    return [c.paciente.nombre, c.motivo, c.direccion, c.id].some((t) => sinTildes(t).includes(q));
+  }
+
+  function geojson(): GeoJSON.FeatureCollection {
+    return {
+      type: 'FeatureCollection',
+      features: CASOS.filter(coincide).map((c) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+        properties: { id: c.id, triaje: c.triaje, estado: c.estado, etiqueta: enmascarar(c.paciente.nombre) },
+      })),
+    };
+  }
+
+  // ---------- Mapa ----------
+  const mapa = new maplibregl.Map({
+    container: 'mapa',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: [DOCTOR.lng, DOCTOR.lat],
+    zoom: 13,
+    pitch: 0,
+    bearing: 0,
+    maxPitch: 70,
+    attributionControl: { compact: true },
+  });
+
+  const colorPorTriaje: maplibregl.ExpressionSpecification = ['match', ['get', 'triaje'], 'critico', COLOR.critico, 'moderado', COLOR.moderado, COLOR.estable];
+  const segunZoom = (a: number, b: number): maplibregl.ExpressionSpecification => ['interpolate', ['linear'], ['zoom'], 13, a, 17, b];
+
+  mapa.on('load', () => {
+    // Estilo claro y cálido, como el video de referencia.
+    if (mapa.getLayer('building-3d')) {
+      mapa.setPaintProperty('building-3d', 'fill-extrusion-color', ['interpolate', ['linear'], ['get', 'render_height'], 0, '#efe6da', 30, '#e3d5c3']);
+      mapa.setPaintProperty('building-3d', 'fill-extrusion-opacity', 0.92);
+    }
+    for (const id of ['poi_r20', 'poi_r7', 'poi_r1']) {
+      if (mapa.getLayer(id)) mapa.setPaintProperty(id, 'text-opacity', 0.55), mapa.setPaintProperty(id, 'icon-opacity', 0.55);
+    }
+
+    mapa.addSource('casos', { type: 'geojson', data: geojson() });
+    mapa.addSource('ruta', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+
+    mapa.addLayer({
+      id: 'ruta', type: 'line', source: 'ruta',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#0e7c86', 'line-width': 5, 'line-dasharray': [0.1, 2] },
+    });
+    mapa.addLayer({
+      id: 'halo', type: 'circle', source: 'casos',
+      paint: { 'circle-color': colorPorTriaje, 'circle-radius': segunZoom(10, 22), 'circle-blur': 0.85, 'circle-opacity': 0.55 },
+    });
+    mapa.addLayer({
+      id: 'pulso', type: 'circle', source: 'casos',
+      filter: ['all', ['==', ['get', 'triaje'], 'critico'], ['==', ['get', 'estado'], 'pendiente']],
+      paint: { 'circle-color': 'transparent', 'circle-stroke-color': COLOR.critico, 'circle-stroke-width': 2, 'circle-radius': 10, 'circle-stroke-opacity': 0.6 },
+    });
+    mapa.addLayer({
+      id: 'seleccion', type: 'circle', source: 'casos',
+      filter: ['==', ['get', 'id'], ''],
+      paint: { 'circle-color': '#ffffff', 'circle-opacity': 0.9, 'circle-radius': segunZoom(10, 17), 'circle-stroke-color': colorPorTriaje, 'circle-stroke-width': 3 },
+    });
+    mapa.addLayer({
+      id: 'punto', type: 'circle', source: 'casos',
+      paint: { 'circle-color': colorPorTriaje, 'circle-radius': segunZoom(5, 10), 'circle-stroke-color': '#ffffff', 'circle-stroke-width': segunZoom(1.5, 3) },
+    });
+    mapa.addLayer({
+      id: 'asignado', type: 'circle', source: 'casos',
+      filter: ['!=', ['get', 'estado'], 'pendiente'],
+      paint: { 'circle-color': 'transparent', 'circle-radius': segunZoom(8, 14), 'circle-stroke-color': '#0e7c86', 'circle-stroke-width': 3 },
+    });
+    mapa.addLayer({
+      id: 'etiqueta', type: 'symbol', source: 'casos', minzoom: 15,
+      layout: {
+        'text-field': ['get', 'etiqueta'],
+        'text-font': ['Noto Sans Bold'],
+        'text-size': 12,
+        'text-offset': [0, 1.5],
+        'text-anchor': 'top',
+        'text-allow-overlap': false,
+      },
+      paint: { 'text-color': '#10232a', 'text-halo-color': '#ffffff', 'text-halo-width': 2 },
+    });
+
+    const el = document.createElement('div');
+    el.className = 'medico';
+    el.innerHTML = '<span></span>';
+    new maplibregl.Marker({ element: el }).setLngLat([DOCTOR.lng, DOCTOR.lat]).addTo(mapa);
+
+    mapa.flyTo({ center: [DOCTOR.lng + 0.001, DOCTOR.lat - 0.002], zoom: 15.6, pitch: 60, bearing: -28, duration: 2400, essential: true });
+
+    // Latido de los críticos pendientes.
+    const latir = (t: number) => {
+      const f = (t % 1600) / 1600;
+      const z = mapa.getZoom();
+      const base = 4 + (z - 13) * 1.2;
+      mapa.setPaintProperty('pulso', 'circle-radius', base + f * (10 + (z - 13) * 2));
+      mapa.setPaintProperty('pulso', 'circle-stroke-opacity', 0.7 * (1 - f));
+      requestAnimationFrame(latir);
+    };
+    requestAnimationFrame(latir);
+
+    for (const capa of ['punto', 'halo']) {
+      mapa.on('click', capa, (e) => {
+        const id = e.features?.[0]?.properties?.id;
+        const caso = CASOS.find((c) => c.id === id);
+        if (caso) abrir(caso);
+      });
+      mapa.on('mouseenter', capa, () => (mapa.getCanvas().style.cursor = 'pointer'));
+      mapa.on('mouseleave', capa, () => (mapa.getCanvas().style.cursor = ''));
+    }
+    mapa.on('click', (e) => {
+      if (!mapa.queryRenderedFeatures(e.point, { layers: ['punto', 'halo'] }).length) cerrar();
+    });
+
+    refrescar();
+
+    // Llegada desde el CRM con ?caso=ID
+    const pedido = CASOS.find((c) => c.id === new URLSearchParams(location.search).get('caso'));
+    if (pedido) setTimeout(() => abrir(pedido), 2500);
+  });
+
+  function refrescar() {
+    (mapa.getSource('casos') as maplibregl.GeoJSONSource | undefined)?.setData(geojson());
+    for (const t of ['critico', 'moderado', 'estable'] as Triaje[]) {
+      const n = CASOS.filter((c) => c.triaje === t && c.estado === 'pendiente').length;
+      document.querySelector(`[data-cuenta="${t}"]`)!.textContent = String(n);
+    }
+    $('criticos-pendientes').textContent = String(CASOS.filter((c) => c.triaje === 'critico' && c.estado === 'pendiente').length);
+  }
+
+  // ---------- Tarjeta ----------
+  const tarjeta = $('tarjeta');
+  const btnTomar = $<HTMLButtonElement>('t-tomar');
+
+  function pintarBoton() {
+    const c = estado.seleccionado;
+    if (!c) return;
+    const nota = $('t-nota');
+    btnTomar.classList.toggle('en-camino', c.estado === 'asignado');
+    if (c.estado !== 'pendiente') {
+      btnTomar.disabled = true;
+      btnTomar.textContent = c.estado === 'asignado' ? `En camino · ${eta(c).min} min` : ETIQUETA_ESTADO[c.estado];
+      nota.innerHTML = 'Ruta optimizada con IA <span class="pronto">Próximamente</span>';
+    } else if (!estado.disponible) {
+      btnTomar.disabled = true;
+      btnTomar.textContent = 'Tomar caso';
+      nota.textContent = 'Activa tu disponibilidad para tomar casos';
+    } else {
+      btnTomar.disabled = false;
+      btnTomar.textContent = c.triaje === 'critico' ? 'Tomar caso urgente' : 'Tomar caso';
+      nota.textContent = '';
+    }
+  }
+
+  function abrir(c: Caso) {
+    estado.seleccionado = c;
+    const { d, min } = eta(c);
+    tarjeta.dataset.triaje = c.triaje;
+    $('t-triaje').textContent = ETIQUETA[c.triaje];
+    $('t-hace').textContent = c.creadoHaceMin < 60 ? `hace ${c.creadoHaceMin} min` : `hace ${Math.floor(c.creadoHaceMin / 60)} h`;
+    $('t-nombre').textContent = c.paciente.nombre;
+    $('t-meta').textContent = `${c.paciente.edad} años · ${c.paciente.sexo} · ${c.paciente.eps}`;
+    $('t-motivo').textContent = c.motivo;
+    const s = c.signos;
+    const campo = (id: string, txt: string, alerta: boolean) => { const e = $(id); e.textContent = txt; e.classList.toggle('alerta', alerta); };
+    campo('t-fc', String(s.fc), s.fc > 110);
+    campo('t-spo2', `${s.spo2}%`, s.spo2 < 92);
+    campo('t-pa', s.pa, parseInt(s.pa) >= 160);
+    campo('t-temp', `${s.temp}°`, s.temp >= 38.5);
+    $('t-direccion').textContent = c.direccion;
+    $('t-eta').textContent = `${d.toFixed(1).replace('.', ',')} km · ${min} min`;
+    $<HTMLAnchorElement>('t-ficha').href = `/casos/${c.id}`;
+    pintarBoton();
+    tarjeta.hidden = false;
+    mapa.setFilter('seleccion', ['==', ['get', 'id'], c.id]);
+    mapa.easeTo({ center: [c.lng, c.lat], duration: 600, offset: innerWidth > 600 ? [120, 40] : [0, -120] });
+  }
+
+  function cerrar() {
+    estado.seleccionado = null;
+    tarjeta.hidden = true;
+    if (mapa.getLayer('seleccion')) mapa.setFilter('seleccion', ['==', ['get', 'id'], '']);
+  }
+
+  $('tarjeta-cerrar').addEventListener('click', cerrar);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+
+  btnTomar.addEventListener('click', () => {
+    const c = estado.seleccionado;
+    if (!c || !estado.disponible || c.estado !== 'pendiente') return;
+    c.estado = 'asignado';
+    cambiarEstado(c.id, 'asignado');
+    refrescar();
+    pintarBoton();
+    (mapa.getSource('ruta') as maplibregl.GeoJSONSource).setData({
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: [[DOCTOR.lng, DOCTOR.lat], [c.lng, c.lat]] },
+    });
+    mapa.fitBounds([[Math.min(DOCTOR.lng, c.lng), Math.min(DOCTOR.lat, c.lat)], [Math.max(DOCTOR.lng, c.lng), Math.max(DOCTOR.lat, c.lat)]], {
+      padding: innerWidth > 600 ? { top: 160, bottom: 160, left: 400, right: 60 } : { top: 170, bottom: 440, left: 50, right: 50 },
+      pitch: 55,
+      bearing: mapa.getBearing(),
+      maxZoom: 16.5,
+      duration: 900,
+    });
+    avisar(`Caso tomado · ${c.paciente.nombre.split(' ')[0]} te espera en ~${eta(c).min} min`);
+  });
+
+  // ---------- Barra superior ----------
+  document.querySelectorAll<HTMLButtonElement>('#filtros .chip').forEach((chip) =>
+    chip.addEventListener('click', () => {
+      const t = chip.dataset.triaje as Triaje;
+      const on = chip.getAttribute('aria-pressed') !== 'true';
+      chip.setAttribute('aria-pressed', String(on));
+      on ? estado.visibles.add(t) : estado.visibles.delete(t);
+      if (estado.seleccionado && !coincide(estado.seleccionado)) cerrar();
+      refrescar();
+    }),
+  );
+
+  const buscar = $<HTMLInputElement>('buscar');
+  buscar.addEventListener('input', () => {
+    estado.busqueda = sinTildes(buscar.value.trim());
+    refrescar();
+  });
+  buscar.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const primero = CASOS.filter(coincide).sort((a, b) => ['critico', 'moderado', 'estable'].indexOf(a.triaje) - ['critico', 'moderado', 'estable'].indexOf(b.triaje))[0];
+    primero ? abrir(primero) : avisar('No encontramos pacientes con esa búsqueda');
+  });
+
+  const btnDisp = $('btn-disponible');
+  btnDisp.addEventListener('click', () => {
+    estado.disponible = !estado.disponible;
+    btnDisp.setAttribute('aria-pressed', String(estado.disponible));
+    btnDisp.querySelector('.txt')!.textContent = estado.disponible ? 'Disponible' : 'No disponible';
+    avisar(estado.disponible ? 'Estás disponible: te llegarán casos cercanos' : 'Pausaste la llegada de casos');
+    pintarBoton();
+  });
+
+  $('btn-ubicarme').addEventListener('click', () =>
+    mapa.flyTo({ center: [DOCTOR.lng + 0.001, DOCTOR.lat - 0.002], zoom: 15.6, pitch: 60, bearing: -28, duration: 1200 }),
+  );
+</script>

@@ -1,0 +1,32 @@
+---
+import App from './App.astro';
+import Lateral from '../components/Lateral.astro';
+import NavInferior from '../components/NavInferior.astro';
+interface Props { titulo: string; activa: 'casos' | 'visitas' }
+const { titulo, activa } = Astro.props;
+---
+<App titulo={`${titulo} · MediRuta`}>
+  <div class="crm">
+    <Lateral activa={activa} />
+    <main class="contenido">
+      <slot />
+    </main>
+  </div>
+  <NavInferior activa={activa} soloMovil />
+</App>
+
+<style>
+  .crm { display: grid; grid-template-columns: 250px 1fr; min-height: 100dvh; }
+  .contenido { min-width: 0; padding: 28px 32px 48px; }
+  @media (max-width: 900px) {
+    .crm { grid-template-columns: 1fr; }
+    .crm > :global(.lateral) { display: none; }
+    .contenido { padding: 20px 16px 130px; }
+  }
+</style>
+
+<script>
+  import { todos } from '../scripts/store';
+  const n = todos().filter((c) => c.triaje === 'critico' && c.estado === 'pendiente').length;
+  document.querySelectorAll('[data-badge-criticos]').forEach((b) => (b.textContent = String(n)));
+</script>

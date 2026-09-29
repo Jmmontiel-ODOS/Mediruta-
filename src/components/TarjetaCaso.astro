@@ -1,0 +1,153 @@
+---
+// Tarjeta del caso seleccionado. MapaCasos.astro la llena al tocar un pin.
+---
+<article class="tarjeta flotante" id="tarjeta" data-triaje="critico" hidden>
+  <button class="cerrar" id="tarjeta-cerrar" aria-label="Cerrar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+  </button>
+
+  <div class="cabeza">
+    <span class="triaje" id="t-triaje">Crítico</span>
+    <span class="hace num" id="t-hace">hace 4 min</span>
+  </div>
+
+  <h2 id="t-nombre">María Gómez</h2>
+  <p class="meta" id="t-meta">67 años · F · Sura</p>
+  <p class="motivo" id="t-motivo">Dolor torácico opresivo</p>
+
+  <dl class="signos num">
+    <div><dt>FC</dt><dd id="t-fc">120</dd></div>
+    <div><dt>SpO₂</dt><dd id="t-spo2">88%</dd></div>
+    <div><dt>PA</dt><dd id="t-pa">180/110</dd></div>
+    <div><dt>T°</dt><dd id="t-temp">38.9°</dd></div>
+  </dl>
+
+  <div class="ruta">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    <span id="t-direccion">Calle 48 Norte # 3N-21</span>
+    <b class="num" id="t-eta">1,2 km · 6 min</b>
+  </div>
+
+  <div class="ia">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6zM19 15l.9 2.6 2.6.9-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9z"/></svg>
+    Resumen clínico con IA
+    <span class="pronto">Próximamente</span>
+  </div>
+
+  <button class="tomar" id="t-tomar">Tomar caso</button>
+  <p class="nota" id="t-nota"></p>
+  <a class="ficha" id="t-ficha" href="/casos">Ver ficha completa →</a>
+</article>
+
+<style>
+  .tarjeta {
+    position: fixed;
+    left: 16px;
+    bottom: 120px;
+    z-index: 25;
+    width: 340px;
+    padding: 18px;
+    border-radius: 20px;
+    border-width: 2px;
+    animation: entra 0.22s ease-out;
+  }
+  .tarjeta[hidden] { display: none; }
+  @keyframes entra { from { opacity: 0; transform: translateY(10px); } }
+  .tarjeta[data-triaje='critico'] { border-color: rgba(229, 72, 77, 0.55); box-shadow: 0 0 0 6px rgba(229, 72, 77, 0.1), var(--sombra); }
+  .tarjeta[data-triaje='moderado'] { border-color: rgba(245, 165, 36, 0.6); box-shadow: 0 0 0 6px rgba(245, 165, 36, 0.12), var(--sombra); }
+  .tarjeta[data-triaje='estable'] { border-color: rgba(48, 164, 108, 0.55); box-shadow: 0 0 0 6px rgba(48, 164, 108, 0.1), var(--sombra); }
+
+  .cerrar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--fondo);
+    color: var(--tinta-2);
+  }
+  .cabeza { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .triaje {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  [data-triaje='critico'] .triaje { background: var(--critico); }
+  [data-triaje='moderado'] .triaje { background: var(--moderado); color: #4a2f00; }
+  [data-triaje='estable'] .triaje { background: var(--estable); }
+  .hace { font-size: 12px; color: var(--tinta-3); font-weight: 600; }
+
+  h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+  .meta { margin: 2px 0 0; font-size: 13px; color: var(--tinta-3); font-weight: 500; }
+  .motivo { margin: 10px 0 0; font-size: 15px; font-weight: 600; color: var(--tinta-2); }
+
+  .signos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 14px 0 0;
+  }
+  .signos div { padding: 8px 6px; border-radius: 10px; background: var(--fondo); text-align: center; }
+  .signos dt { font-size: 10px; font-weight: 700; color: var(--tinta-3); letter-spacing: 0.04em; }
+  .signos dd { margin: 2px 0 0; font-size: 14px; font-weight: 800; }
+  .signos .alerta { color: var(--critico); }
+
+  .ruta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--tinta-2);
+  }
+  .ruta span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ruta b { color: var(--marca-fuerte); font-weight: 800; white-space: nowrap; }
+
+  .ia {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #f5f1ff, #eef8f8);
+    font-size: 13px;
+    font-weight: 600;
+    color: #5a3fc0;
+  }
+  .ia .pronto { margin-left: auto; }
+
+  .tomar {
+    width: 100%;
+    height: 50px;
+    margin-top: 14px;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(90deg, var(--marca), #16a3a0);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(14, 124, 134, 0.3);
+    transition: transform 0.15s, filter 0.15s;
+  }
+  .tomar:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  [data-triaje='critico'] .tomar { background: linear-gradient(90deg, #d93a40, var(--critico)); box-shadow: 0 8px 18px rgba(229, 72, 77, 0.3); }
+  .tomar:disabled { background: var(--borde); color: var(--tinta-3); box-shadow: none; cursor: not-allowed; transform: none; }
+  .tomar.en-camino,
+  [data-triaje] .tomar.en-camino { background: var(--marca-suave); color: var(--marca-fuerte); box-shadow: none; cursor: default; transform: none; }
+  .nota { margin: 8px 0 0; font-size: 12px; color: var(--tinta-3); text-align: center; min-height: 1em; }
+
+  .ficha { display: block; margin-top: 6px; text-align: center; font-size: 14px; font-weight: 700; color: var(--marca); text-decoration: none; }
+  .ficha:hover { text-decoration: underline; }
+  @media (max-width: 600px) {
+    .tarjeta { left: 12px; right: 12px; width: auto; bottom: 104px; }
+  }
+</style>

@@ -1,0 +1,111 @@
+:root {
+  --marca: #0e7c86;
+  --marca-fuerte: #0a5f67;
+  --marca-suave: #e3f3f3;
+  --critico: #e5484d;
+  --moderado: #f5a524;
+  --estable: #30a46c;
+  --tinta: #10232a;
+  --tinta-2: #4a5d63;
+  --tinta-3: #85969b;
+  --superficie: #ffffff;
+  --fondo: #f3f6f6;
+  --borde: #e2e9ea;
+  --sombra: 0 10px 30px rgba(16, 35, 42, 0.12), 0 2px 6px rgba(16, 35, 42, 0.06);
+  --radio: 16px;
+  --fuente: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: var(--fuente);
+  color: var(--tinta);
+  background: var(--fondo);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+.num { font-variant-numeric: tabular-nums; }
+
+.flotante {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.icono-btn {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--sombra);
+  color: var(--tinta);
+  transition: transform 0.15s, background 0.15s;
+}
+.icono-btn:hover { background: #fff; transform: translateY(-1px); }
+.icono-btn[aria-pressed='true'] { background: var(--marca); color: #fff; border-color: var(--marca); }
+
+.pronto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b4bd6;
+  background: #efeafd;
+  white-space: nowrap;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 124px;
+  transform: translate(-50%, -12px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--tinta);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--sombra);
+  transition: opacity 0.2s, transform 0.2s;
+  max-width: calc(100vw - 32px);
+}
+.toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* Piezas del CRM: triaje, estado del caso, botones */
+.barra-t.critico { background: var(--critico); }
+.barra-t.moderado { background: var(--moderado); }
+.barra-t.estable { background: var(--estable); }
+.estado { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.estado::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.estado.pendiente { background: #fdecec; color: #c2353a; }
+.estado.asignado { background: #e7f0ff; color: #2459c9; }
+.estado.en_atencion { background: var(--marca-suave); color: var(--marca-fuerte); }
+.estado.resuelto { background: #e8f6ee; color: #1f7a4d; }
+.btn-tomar {
+  height: 38px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--marca); color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap;
+}
+.btn-tomar.urgente { background: var(--critico); }
+.btn-ver { font-size: 13px; font-weight: 700; color: var(--marca); white-space: nowrap; }
+.vacio { padding: 48px 16px; text-align: center; color: var(--tinta-3); background: var(--superficie); border: 1px dashed var(--borde); border-radius: var(--radio); }
+

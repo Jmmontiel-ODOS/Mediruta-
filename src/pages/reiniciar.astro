@@ -1,0 +1,12 @@
+---
+// Deja la demo como nueva: borra los casos tomados, notas, mensajes y el recorrido visto.
+// La sesión se mantiene para no tener que volver a ingresar.
+---
+<script is:inline>
+  try {
+    localStorage.removeItem('mediruta-casos');
+    localStorage.removeItem('mediruta-tour');
+    localStorage.removeItem('mediruta-vista-casos');
+  } catch {}
+  location.replace('/');
+</script>

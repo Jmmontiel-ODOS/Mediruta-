@@ -1,0 +1,196 @@
+---
+import App from '../layouts/App.astro';
+---
+<App titulo="MediRuta · Ingresar" protegida={false}>
+  <main class="login">
+    <section class="marca" aria-hidden="true">
+      <div class="puntos">
+        <i class="r" style="left:22%;top:30%"></i>
+        <i class="a" style="left:48%;top:22%"></i>
+        <i class="v" style="left:70%;top:38%"></i>
+        <i class="a" style="left:34%;top:56%"></i>
+        <i class="v" style="left:62%;top:64%"></i>
+        <i class="r" style="left:78%;top:18%"></i>
+        <i class="v" style="left:12%;top:46%"></i>
+        <i class="a" style="left:84%;top:58%"></i>
+      </div>
+      <div class="marca-txt">
+        <img src="/favicon.svg" alt="" width="44" height="44" />
+        <h1>Los pacientes que más te necesitan, en un mapa.</h1>
+        <p>MediRuta conecta médicos con pacientes en casa. Rojo, amarillo o verde: sabes a quién atender primero.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <form class="form" id="form-login" novalidate>
+        <a class="logo" href="/login">
+          <img src="/favicon.svg" alt="" width="32" height="32" />
+          <span>MediRuta</span>
+        </a>
+        <h2>Ingresa a tu turno</h2>
+        <p class="sub">Acceso para médicos de la red.</p>
+
+        <label>
+          <span>Usuario</span>
+          <input id="usuario" name="usuario" autocomplete="username" placeholder="Nombre y apellido" required />
+        </label>
+        <label>
+          <span>Contraseña</span>
+          <div class="clave">
+            <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••" required />
+            <button type="button" id="ver" aria-label="Mostrar contraseña">Ver</button>
+          </div>
+        </label>
+
+        <p class="error" id="error" role="alert"></p>
+
+        <button class="entrar" type="submit">Ingresar</button>
+
+        <div class="extra">
+          <span>Ingreso con huella o Face ID</span>
+          <span class="pronto">Próximamente</span>
+        </div>
+      </form>
+      <p class="pie">MVP · Datos de prueba, no son pacientes reales</p>
+    </section>
+  </main>
+</App>
+
+<style>
+  .login { min-height: 100dvh; display: grid; grid-template-columns: 1.1fr 1fr; background: var(--superficie); }
+
+  .marca {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 56px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.12), transparent 40%),
+      repeating-linear-gradient(28deg, transparent 0 46px, rgba(255, 255, 255, 0.06) 46px 48px),
+      repeating-linear-gradient(-62deg, transparent 0 70px, rgba(255, 255, 255, 0.05) 70px 72px),
+      linear-gradient(160deg, #0e7c86, #0a4f57);
+  }
+  .puntos i {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+  }
+  .puntos .r { background: var(--critico); animation: latido 1.6s ease-out infinite; }
+  .puntos .a { background: var(--moderado); box-shadow: 0 0 18px rgba(245, 165, 36, 0.8); }
+  .puntos .v { background: var(--estable); box-shadow: 0 0 18px rgba(48, 164, 108, 0.8); }
+  @keyframes latido {
+    0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.8); }
+    100% { box-shadow: 0 0 0 22px rgba(229, 72, 77, 0); }
+  }
+  .marca-txt { position: relative; max-width: 460px; }
+  .marca-txt img { border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); }
+  h1 { margin: 20px 0 0; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; }
+  .marca-txt p { margin: 14px 0 0; font-size: 17px; line-height: 1.55; opacity: 0.85; }
+
+  .panel { display: grid; place-items: center; padding: 40px 24px; position: relative; }
+  .form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tinta); font-weight: 800; font-size: 18px; margin-bottom: 12px; }
+  h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+  .sub { margin: -10px 0 8px; color: var(--tinta-3); font-size: 15px; }
+
+  label { display: grid; gap: 6px; }
+  label > span { font-size: 13px; font-weight: 700; color: var(--tinta-2); }
+  input {
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1.5px solid var(--borde);
+    border-radius: 12px;
+    font: inherit;
+    font-size: 16px;
+    color: var(--tinta);
+    background: var(--fondo);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  input:focus { border-color: var(--marca); background: #fff; box-shadow: 0 0 0 4px var(--marca-suave); }
+  .clave { position: relative; }
+  .clave input { padding-right: 64px; }
+  .clave button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--marca);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .error { margin: 0; min-height: 20px; color: var(--critico); font-size: 14px; font-weight: 600; }
+  .form.mal input { border-color: rgba(229, 72, 77, 0.6); }
+  .form.mal { animation: sacudir 0.35s; }
+  @keyframes sacudir { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  .entrar {
+    height: 52px;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(90deg, var(--marca), #16a3a0);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(14, 124, 134, 0.3);
+  }
+  .entrar:disabled { opacity: 0.7; }
+  .extra { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: var(--tinta-3); }
+  .pie { position: absolute; bottom: 20px; margin: 0; font-size: 12px; color: var(--tinta-3); }
+
+  @media (max-width: 860px) {
+    .login { grid-template-columns: 1fr; }
+    .marca { display: none; }
+  }
+</style>
+
+<script>
+  import { cerrar, iniciar, validar } from '../scripts/sesion';
+
+  // Entrar al login siempre muestra el formulario y cierra cualquier sesión anterior.
+  cerrar();
+
+  const form = document.getElementById('form-login') as HTMLFormElement;
+  const usuario = document.getElementById('usuario') as HTMLInputElement;
+  const contrasena = document.getElementById('contrasena') as HTMLInputElement;
+  const error = document.getElementById('error')!;
+  const ver = document.getElementById('ver')!;
+
+  ver.addEventListener('click', () => {
+    const oculto = contrasena.type === 'password';
+    contrasena.type = oculto ? 'text' : 'password';
+    ver.textContent = oculto ? 'Ocultar' : 'Ver';
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    form.classList.remove('mal');
+    if (!usuario.value.trim() || !contrasena.value) {
+      error.textContent = 'Escribe tu usuario y contraseña.';
+      form.classList.add('mal');
+      return;
+    }
+    if (!validar(usuario.value, contrasena.value)) {
+      error.textContent = 'Usuario o contraseña incorrectos.';
+      void form.offsetWidth;
+      form.classList.add('mal');
+      return;
+    }
+    error.textContent = '';
+    const btn = form.querySelector<HTMLButtonElement>('.entrar')!;
+    btn.disabled = true;
+    btn.textContent = 'Abriendo tu turno…';
+    iniciar();
+    setTimeout(() => location.replace('/'), 500);
+  });
+</script>

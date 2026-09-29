@@ -1,0 +1,127 @@
+---
+// Navegación principal. En el mapa flota siempre; en el CRM solo aparece en celular.
+interface Props { activa: 'mapa' | 'casos' | 'visitas'; soloMovil?: boolean }
+const { activa, soloMovil = false } = Astro.props;
+const items = [
+  { id: 'mapa', href: '/', texto: 'Mapa', icono: '<path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="currentColor" stroke="none"/>' },
+  { id: 'casos', href: '/casos', texto: 'Casos', icono: '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 2h6v4H9zM8 11h8M8 15h5"/>' },
+  { id: 'visitas', href: '/visitas', texto: 'Visitas', icono: '<path d="M3 12h4l3-8 4 16 3-8h4"/>' },
+];
+---
+<nav class:list={['nav flotante', { 'solo-movil': soloMovil }]} aria-label="Principal">
+  {items.map((i) => (
+    <a class:list={['item', { activo: i.id === activa }]} href={i.href} aria-current={i.id === activa ? 'page' : undefined}>
+      {i.id === activa ? (
+        <span class="burbuja"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={i.icono} /></span>
+      ) : (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={i.icono} />
+      )}
+      {i.texto}
+    </a>
+  ))}
+  <button class="item" id="btn-perfil" aria-expanded="false" aria-controls="menu-perfil">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+    Perfil
+  </button>
+  <div class="menu flotante" id="menu-perfil" hidden>
+    <b>Dr. Diego Cardona</b>
+    <span>Medicina general · Cali</span>
+    <button class="reiniciar" data-reiniciar>Reiniciar datos de demo</button>
+    <button class="salir" data-salir>Cerrar sesión</button>
+  </div>
+</nav>
+
+<style>
+  .nav {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 22px;
+  }
+  .item {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    min-width: 76px;
+    padding: 6px 8px;
+    border: 0;
+    background: none;
+    color: var(--tinta-3);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .item:hover { color: var(--tinta); }
+  .activo { color: var(--marca); }
+  .burbuja {
+    width: 56px;
+    height: 56px;
+    margin-top: -30px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--marca);
+    color: #fff;
+    border: 4px solid #fff;
+    box-shadow: 0 8px 20px rgba(14, 124, 134, 0.4);
+  }
+  .menu {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    width: 230px;
+    display: grid;
+    gap: 2px;
+    padding: 14px;
+  }
+  .menu[hidden] { display: none; }
+  .menu b { font-size: 15px; }
+  .menu span { font-size: 12px; color: var(--tinta-3); }
+  .menu button {
+    margin-top: 8px;
+    height: 40px;
+    border: 1.5px solid var(--borde);
+    border-radius: 10px;
+    background: #fff;
+    font-weight: 700;
+  }
+  .menu .reiniciar { margin-top: 12px; color: var(--tinta-2); }
+  .menu .salir { color: var(--critico); }
+  @media (min-width: 901px) {
+    .solo-movil { display: none; }
+  }
+  @media (max-width: 420px) {
+    .nav { left: 16px; right: 16px; transform: none; justify-content: space-around; }
+    .item { min-width: 0; }
+  }
+</style>
+
+<script>
+  import { cerrar } from '../scripts/sesion';
+  import { reiniciar } from '../scripts/store';
+
+  const perfil = document.getElementById('btn-perfil')!;
+  const menu = document.getElementById('menu-perfil')!;
+  perfil.addEventListener('click', () => {
+    menu.hidden = !menu.hidden;
+    perfil.setAttribute('aria-expanded', String(!menu.hidden));
+  });
+  document.querySelectorAll('[data-salir]').forEach((b) =>
+    b.addEventListener('click', () => {
+      cerrar();
+      location.replace('/login');
+    }),
+  );
+  document.querySelectorAll('[data-reiniciar]').forEach((b) =>
+    b.addEventListener('click', () => {
+      reiniciar();
+      location.reload();
+    }),
+  );
+</script>
